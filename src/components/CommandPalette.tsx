@@ -216,7 +216,7 @@ const CommandRow: FC<{
             className={css({
               minWidth: '4em',
               whiteSpace: 'nowrap',
-              color: disabled ? 'gray' : gestureInProgress === shortcut.gesture ? 'vividHighlight' : 'fg',
+              color: disabled ? 'gray' : selected ? '#64C7EA' : gestureInProgress === shortcut.gesture ? 'vividHighlight' : 'gray',
               fontWeight: selected ? 'bold' : undefined,
             })}
           >
@@ -227,7 +227,6 @@ const CommandRow: FC<{
         <div className={css({ maxHeight: !isTouch ? '1em' : undefined, flexGrow: 1, zIndex: 1 })}>
           <div
             className={css({
-              backgroundColor: selected ? 'commandSelected' : undefined,
               display: 'flex',
               padding: !isTouch ? '3px 0.6em 0.3em 0.2em' : undefined,
               marginLeft: !isTouch ? '2em' : undefined,
