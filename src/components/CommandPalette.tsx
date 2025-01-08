@@ -135,6 +135,7 @@ const CommandRow: FC<{
   const isActive = shortcut.isActive?.(store.getState())
   const label = shortcut.labelInverse && isActive ? shortcut.labelInverse! : shortcut.label
   const disabled = useSelector(state => !isExecutable(state, shortcut))
+  const Icon = shortcut.svg
 
   // convert the description to a string
   const description = useSelector(state => {
@@ -188,28 +189,44 @@ const CommandRow: FC<{
             ? {
                 display: 'flex',
                 margin: selected ? '-5px 0' : undefined,
+                flexDirection: 'row',
+                justifyContent: 'flex-start',
+                alignItems: 'center',
+                gap: '0.5em'
               }
             : null),
         })}
       >
-        <div>
-          {/* gesture diagram */}
-          {isTouch && (
-            <GestureDiagram
-              color={disabled ? token('colors.gray') : undefined}
-              highlight={!disabled ? gestureInProgress.length : undefined}
-              path={gestureString(shortcut)}
-              strokeWidth={4}
-              cssRaw={css.raw({
-                position: 'absolute',
-                marginLeft: selected ? 5 : 15,
-                left: selected ? '-1.75em' : '-2.2em',
-                top: selected ? '-0.2em' : '-0.75em',
-              })}
-              width={45}
-              height={45}
-            />
-          )}
+        
+            {/* div used to contain width:100% and height:100% of icons while in a flex box */}
+            <div>
+            {/* gesture diagram */}
+            {isTouch ? (
+              <GestureDiagram
+                color={disabled ? token('colors.gray') : undefined}
+                highlight={!disabled ? gestureInProgress.length : undefined}
+                path={gestureString(shortcut)}
+                strokeWidth={4}
+                cssRaw={css.raw({
+                  position: 'absolute',
+                  marginLeft: selected ? 5 : 15,
+                  left: selected ? '-1.75em' : '-2.2em',
+                  top: selected ? '-0.2em' : '-0.75em',
+                })}
+                width={45}
+                height={45}
+              />
+            ) : <Icon fill="white"/>}
+            </div>
+
+            {/* label + description vertical styling*/}
+            <div className={css({
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                gap: '0.2em',
+            })}
+          >
 
           {/* label */}
           <div
@@ -222,35 +239,29 @@ const CommandRow: FC<{
           >
             <HighlightedText value={label} match={search} disabled={disabled} />
           </div>
-        </div>
 
         <div className={css({ maxHeight: !isTouch ? '1em' : undefined, flexGrow: 1, zIndex: 1 })}>
           <div
             className={css({
               display: 'flex',
-              padding: !isTouch ? '3px 0.6em 0.3em 0.2em' : undefined,
-              marginLeft: !isTouch ? '2em' : undefined,
             })}
           >
             {/* description */}
-            {selected && (
-              <div
-                className={css({
-                  fontSize: '80%',
-                  ...(!isTouch
-                    ? {
-                        flexGrow: 1,
-                        marginLeft: '0.5em',
-                      }
-                    : null),
-                })}
-              >
-                {description}
-              </div>
-            )}
+            <div
+              className={css({
+                fontSize: '80%',
+                ...(!isTouch
+                  ? {
+                      flexGrow: 1,
+                    }
+                  : null),
+              })}
+            >
+              {description}
+            </div>
 
             {/* keyboard shortcut */}
-            {selected && !isTouch && (
+            {!isTouch && (
               <div
                 className={css({
                   fontSize: '80%',
@@ -267,6 +278,7 @@ const CommandRow: FC<{
                 </span>
               </div>
             )}
+            </div>
           </div>
         </div>
       </div>
