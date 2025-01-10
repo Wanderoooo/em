@@ -83,6 +83,7 @@
     "@emotion/react": "^11.13.5",
     "@emotion/styled": "^11.13.0",
     "@mui/material": "^6.1.8",
+    "@nextui-org/kbd": "^2.2.6",
     "@stylistic/eslint-plugin-ts": "^2.10.1",
     "algoliasearch": "^5.15.0",
     "axios": "^1.7.7",
