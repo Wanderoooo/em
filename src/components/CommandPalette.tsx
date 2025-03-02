@@ -1,13 +1,15 @@
-import { arrowTextToArrowCharacter } from '../commands'
 import React, { FC, ReactElement, useCallback, useEffect, useRef, useState } from 'react'
 import { useDispatch, useSelector, useStore } from 'react-redux'
 import { TransitionGroup } from 'react-transition-group'
 import { css } from '../../styled-system/css'
 import { token } from '../../styled-system/tokens'
 import Command from '../@types/Command'
+import Key from '../@types/Key'
 import State from '../@types/State'
 import { commandPaletteActionCreator as commandPalette } from '../actions/commandPalette'
 import { isTouch } from '../browser'
+import { isMac } from '../browser'
+import { arrowTextToArrowCharacter } from '../commands'
 import { commandById, gestureString, hashCommand, hashKeyDown } from '../commands'
 import { GESTURE_CANCEL_ALERT_TEXT } from '../constants'
 import allowScroll from '../device/disableScroll'
@@ -19,17 +21,14 @@ import { executeCommandWithMulticursor } from '../util/executeCommand'
 import FadeTransition from './FadeTransition'
 import GestureDiagram from './GestureDiagram'
 import HighlightedText from './HighlightedText'
-import { isMac } from "../browser"
-import Key from '../@types/Key'
 import Popup from './Popup'
-
+import AltOrOptionIcon from './icons/AltOrOptionIcon'
+import BackspaceIcon from './icons/BackspaceIcon'
 // Icons
 import CmdIcon from './icons/CmdIcon'
 import CtrlIcon from './icons/CtrlIcon'
 import PlusIcon from './icons/PlusIcon'
-import AltOrOptionIcon from './icons/AltOrOptionIcon'
 import ShiftIcon from './icons/ShiftIcon'
-import BackspaceIcon from './icons/BackspaceIcon'
 
 /**********************************************************************
  * Constants
@@ -48,17 +47,19 @@ const commandPaletteShortcut = commandById('commandPalette')
 const isExecutable = (state: State, shortcut: Command) =>
   (!shortcut.canExecute || shortcut.canExecute(state)) && (shortcut.allowExecuteFromModal || !state.showModal)
 
-const formatKeyboardShortcutIcons = (inputKeyboardOrString: Key | string) : JSX.Element => {
-  const keyboard = typeof inputKeyboardOrString === 'string' ? { key: inputKeyboardOrString as string } : inputKeyboardOrString
+const formatKeyboardShortcutIcons = (inputKeyboardOrString: Key | string): JSX.Element => {
+  const keyboard =
+    typeof inputKeyboardOrString === 'string' ? { key: inputKeyboardOrString as string } : inputKeyboardOrString
 
   return (
-    <div className={css({
-      display: 'flex',
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: '0.3em'
-      
-    })}>
+    <div
+      className={css({
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: '0.3em',
+      })}
+    >
       {keyboard.meta && (isMac ? <CmdIcon /> : <CtrlIcon />)}
       {keyboard.meta && <PlusIcon />}
       {keyboard.alt && <AltOrOptionIcon />}
@@ -67,7 +68,13 @@ const formatKeyboardShortcutIcons = (inputKeyboardOrString: Key | string) : JSX.
       {keyboard.control && <PlusIcon />}
       {keyboard.shift && <ShiftIcon />}
       {keyboard.shift && <PlusIcon />}
-      {keyboard.key == 'Backspace' ? <BackspaceIcon /> : arrowTextToArrowCharacter(keyboard.shift && keyboard.key.length === 1 ? keyboard.key.toUpperCase() : keyboard.key)}
+      {keyboard.key == 'Backspace' ? (
+        <BackspaceIcon />
+      ) : (
+        arrowTextToArrowCharacter(
+          keyboard.shift && keyboard.key.length === 1 ? keyboard.key.toUpperCase() : keyboard.key,
+        )
+      )}
     </div>
   )
 }
@@ -142,12 +149,12 @@ const CommandSearch: FC<{
     <div>
       <input
         type='text'
-        placeholder='Search commands by name...'
+        placeholder='Search for a command'
         ref={inputRef}
         onInput={(e: React.ChangeEvent<HTMLInputElement>) => {
           onInput?.(e.target.value)
         }}
-        className={css({ marginLeft: 0, marginBottom: 0, border: 'none', background: 'transparent' })}
+        className={css({ margin: '12px 24px', padding: 0, border: 'none', background: 'transparent' })}
       />
     </div>
   )
@@ -157,13 +164,12 @@ const CommandSearch: FC<{
 const CommandRow: FC<{
   gestureInProgress: string
   search: string
-  last?: boolean
   onClick: (e: React.MouseEvent, shortcut: Command) => void
   onHover: (e: MouseEvent, shortcut: Command) => void
   selected?: boolean
   shortcut: Command
   style?: React.CSSProperties
-}> = ({ gestureInProgress, search, last, onClick, onHover, selected, shortcut, style }) => {
+}> = ({ gestureInProgress, search, onClick, onHover, selected, shortcut, style }) => {
   const store = useStore()
   const ref = React.useRef<HTMLDivElement>(null)
 
@@ -203,8 +209,8 @@ const CommandRow: FC<{
     <div
       className={css({
         cursor: !disabled ? 'pointer' : undefined,
-        paddingBottom: last ? (isTouch ? 0 : '4em') : '0.6em',
-        paddingLeft: selected ? 'calc(1em - 10px)' : '1em',
+        // paddingBottom: last ? (isTouch ? 0 : '4em') : 0,
+        // paddingLeft: selected ? 'calc(1em - 10px)' : '1em',
         position: 'relative',
         textAlign: 'left',
       })}
@@ -219,12 +225,13 @@ const CommandRow: FC<{
       <div
         className={css({
           backgroundColor: selected ? 'commandSelected' : undefined,
-          padding: selected ? '5px 0 5px 0.5em' : undefined,
+          // padding: selected ? '10px 0.3em 10px 0.5em' : undefined,
           borderRadius: '8px', // constant curve
+          padding: '10px',
           ...(!isTouch
             ? {
                 display: 'flex',
-                margin: selected ? '-5px 0' : undefined,
+                // margin: selected ? '-5px 0' : undefined,
                 flexDirection: 'row',
                 justifyContent: 'flex-start',
                 alignItems: 'center',
@@ -233,88 +240,99 @@ const CommandRow: FC<{
             : null),
         })}
       >
-        
-            {/* div used to contain width:100% and height:100% of icons while in a flex box */}
-            <div>
-            {/* gesture diagram */}
-            {isTouch ? (
-              <GestureDiagram
-                color={disabled ? token('colors.gray') : undefined}
-                highlight={!disabled ? gestureInProgress.length : undefined}
-                path={gestureString(shortcut)}
-                strokeWidth={4}
-                cssRaw={css.raw({
-                  position: 'absolute',
-                  marginLeft: selected ? 5 : 15,
-                  left: selected ? '-1.75em' : '-2.2em',
-                  top: selected ? '-0.2em' : '-0.75em',
-                })}
-                width={45}
-                height={45}
-              />
-            ) : <Icon fill="white"/>}
-            </div>
-
-            {/* label + description vertical styling*/}
-            <div className={css({
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'flex-start',
-                gap: '0.2em',
+  
+        {/* div used to contain width:100% and height:100% of icons while in a flex box */}
+        <div>
+          {/* gesture diagram */}
+          {isTouch ? (
+            <GestureDiagram
+              color={disabled ? token('colors.gray') : undefined}
+              highlight={!disabled ? gestureInProgress.length : undefined}
+              path={gestureString(shortcut)}
+              strokeWidth={4}
+              cssRaw={css.raw({
+                position: 'absolute',
+                marginLeft: selected ? 5 : 15,
+                left: selected ? '-1.75em' : '-2.2em',
+                top: selected ? '-0.2em' : '-0.75em',
               })}
-            >
+              width={45}
+              height={45}
+            />
+          ) : (
+            <Icon fill='white' />
+          )}
+        </div>
 
+        {/* label + description vertical styling*/}
+        <div
+          className={css({
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            gap: '0.2em',
+            marginRight: '3em',
+            flexWrap: 'wrap',
+          })}
+        >
           {/* label */}
           <div
             className={css({
               minWidth: '4em',
               whiteSpace: 'nowrap',
-              color: disabled ? 'gray' : selected ? '#64C7EA' : gestureInProgress === shortcut.gesture ? 'vividHighlight' : 'fg',
+              color: disabled
+                ? 'gray'
+                : selected
+                  ? 'blueHighlight'
+                  : gestureInProgress === shortcut.gesture
+                    ? 'vividHighlight'
+                    : 'fg',
               fontWeight: selected ? 'bold' : undefined,
             })}
           >
             <HighlightedText value={label} match={search} disabled={disabled} />
           </div>
 
-        <div className={css({ maxHeight: !isTouch ? '1em' : undefined, flexGrow: 1, zIndex: 1 })}>
-          <div
-            className={css({
-              display: 'flex',
-            })}
-          >
-            {/* description */}
+          <div className={css({ flexGrow: 1, zIndex: 1 })}>
             <div
               className={css({
-                fontSize: '80%',
-                ...(!isTouch
-                  ? {
-                      flexGrow: 1,
-                    }
-                  : null),
+                display: 'flex',
               })}
             >
-              {description}
-            </div>
+              {/* description */}
+              <div
+                className={css({
+                  fontSize: '80%',
+                  ...(!isTouch
+                    ? {
+                        flexGrow: 1,
+                      }
+                    : null),
+                })}
+              >
+                {description}
+              </div>
             </div>
           </div>
         </div>
         {/* keyboard shortcut */}
         {!isTouch && (
-        <div
-          className={css({
-            fontSize: '80%',
-            position: 'relative',
-            ...(!isTouch
-              ? {
-                  display: 'inline',
-                }
-              : null),
-          })}
-        >
-          <span className={css({ whiteSpace: 'nowrap' })}>
-            {shortcut.keyboard && formatKeyboardShortcutIcons(shortcut.keyboard)}
-          </span>
-        </div>
+          <div
+            className={css({
+              fontSize: '80%',
+              position: 'relative',
+              ...(!isTouch
+                ? {
+                    display: 'inline',
+                  }
+                : null),
+              marginLeft: 'auto',
+            })}
+          >
+            <span className={css({ whiteSpace: 'nowrap' })}>
+              {shortcut.keyboard && formatKeyboardShortcutIcons(shortcut.keyboard)}
+            </span>
+          </div>
         )}
       </div>
     </div>
@@ -427,65 +445,92 @@ const CommandPalette: FC = () => {
   )
 
   return (
-    <div
-      className={css({
-        ...(gestureInProgress || !isTouch ? { paddingLeft: '4em', paddingRight: '1.8em' } : null),
-        marginBottom: isTouch ? 0 : fontSize,
-        textAlign: 'left',
-      })}
-    >
-      {!isTouch || (gestureInProgress && shortcuts.length > 0) ? (
-        <div>
-          <h2
-            className={css({
-              marginTop: 0,
-              marginBottom: '1em',
-              paddingLeft: 5,
-              borderBottom: 'solid 1px {colors.gray50}',
-            })}
-            style={{ marginLeft: -fontSize * 1.8 }}
-          >
-            {!isTouch ? (
-              <CommandSearch
-                onExecute={onExecuteSelected}
-                onInput={setSearch}
-                onSelectUp={onSelectUp}
-                onSelectDown={onSelectDown}
-                onSelectTop={onSelectTop}
-                onSelectBottom={onSelectBottom}
-              />
-            ) : (
-              'Gestures'
-            )}
-          </h2>
+    <>
+      <div
+        className={css({
+        position: 'absolute',
+        width: '100%',
+        height: '100%',
+        top: '0',
+        left: '0',
+        right: '0',
+        bottom: '0',
+        backgroundColor: 'bgOverlay50',
+        cursor: 'pointer',
+        })}
+    />
+      <div
+        className={css({
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          position: 'absolute',
+          height: '100%',
+          width: '100%',
+        })}
+      >
+        <div
+          className={css({
+            marginBottom: isTouch ? 0 : fontSize,
+            textAlign: 'left',
+            border: '1px solid {colors.cpBorder}',
+            borderRadius: '12px',
+            backgroundColor: 'cpBackground',
+            maxHeight: '100%',
+            maxWidth: '826px',
+          })}
+        >
+          {!isTouch || (gestureInProgress && shortcuts.length > 0) ? (
+            <div>
+              <h2
+                className={css({
+                  margin: 0,
+                  borderBottom: 'solid 1px {colors.cpBorder}',
+                })}
+                // style={{ marginLeft: -fontSize * 1.8 }}
+              >
+                {!isTouch ? (
+                  <CommandSearch
+                    onExecute={onExecuteSelected}
+                    onInput={setSearch}
+                    onSelectUp={onSelectUp}
+                    onSelectDown={onSelectDown}
+                    onSelectTop={onSelectTop}
+                    onSelectBottom={onSelectBottom}
+                  />
+                ) : (
+                  'Gestures'
+                )}
+              </h2>
 
-          <div
-            className={css({
-              marginLeft: !isTouch ? '-2.4em' : '-1.2em',
-              // offset the negative marginTop on CommandRow
-              paddingTop: 5,
-              ...(!isTouch ? { maxHeight: 'calc(100vh - 8em)', overflow: 'auto' } : null),
-            })}
-          >
-            {shortcuts.map(shortcut => (
-              <CommandRow
-                search={search}
-                gestureInProgress={gestureInProgress as string}
-                key={shortcut.id}
-                last={shortcut === shortcuts[shortcuts.length - 1]}
-                onClick={onExecute}
-                onHover={onHover}
-                selected={!isTouch ? shortcut === selectedShortcut : gestureInProgress === shortcut.gesture}
-                shortcut={shortcut}
-              />
-            ))}
-            {shortcuts.length === 0 && <span className={css({ marginLeft: '1em' })}>No matching commands</span>}
-          </div>
+              <div
+                className={css({
+                  ...(!isTouch ? { maxHeight: 'calc(100vh - 19em)' } : null),
+                  overflow: 'auto',
+                  // TODO: move padding here
+                  padding: '12px',
+                })}
+              >
+                {shortcuts.map(shortcut => (
+                  <CommandRow
+                    search={search}
+                    gestureInProgress={gestureInProgress as string}
+                    key={shortcut.id}
+                    onClick={onExecute}
+                    onHover={onHover}
+                    selected={!isTouch ? shortcut === selectedShortcut : gestureInProgress === shortcut.gesture}
+                    shortcut={shortcut}
+                  />
+                ))}
+                {shortcuts.length === 0 && <span className={css({ marginLeft: '1em' })}>No matching commands</span>}
+              </div>
+            </div>
+          ) : isTouch ? (
+            <div className={css({ textAlign: 'center' })}>{GESTURE_CANCEL_ALERT_TEXT}</div>
+          ) : null}
         </div>
-      ) : isTouch ? (
-        <div className={css({ textAlign: 'center' })}>{GESTURE_CANCEL_ALERT_TEXT}</div>
-      ) : null}
-    </div>
+      </div>
+    </>
   )
 }
 
@@ -495,7 +540,16 @@ const CommandPaletteWithTransition: FC = () => {
   const dispatch = useDispatch()
   const popupRef = useRef<HTMLDivElement>(null)
 
-  const popUpStyles = css.raw({ zIndex: 'commandPalette', width: '100%', height: '100%', backgroundColor: 'gray'})
+  const popUpStyles = css.raw({
+    zIndex: 'commandPalette',
+    width: '100%',
+    height: '100%',
+    scrollbarWidth: 'none',
+    '& [data-testid="popup-value"]': {
+      position: 'relative',
+      height: '100%',
+    },
+  })
 
   /** Dismiss the alert on close. */
   const onClose = useCallback(() => {
@@ -509,6 +563,7 @@ const CommandPaletteWithTransition: FC = () => {
   return (
     <TransitionGroup
       childFactory={(child: ReactElement) => (!isDismissed ? child : React.cloneElement(child, { timeout: 0 }))}
+      // className={css({ display: 'flex', justifyContent: 'center', alignItems: 'center' })}
     >
       {showCommandPalette ? (
         <FadeTransition duration='fast' nodeRef={popupRef} onEntering={() => setDismiss(false)}>
